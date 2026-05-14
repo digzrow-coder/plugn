@@ -18,9 +18,46 @@
                   overwriteCapacitorConfig(response.app_id, response.name);
                   overwriteGlobalScss(response.custom_css, response.name);
                   overwriteManifest(response.restaurant_uuid, response.name, response.theme_color, response.logo);
+                  overwriteRobotsTxt(response.restaurant_uuid, response.restaurant_domain, apiEndPoint);
                   overwriteEnvironment(response.restaurant_uuid, storebranchName, apiEndPoint);
                   overwriteAngularFile(storebranchName);
                 });
+
+                function escapeHtml(value) {
+                  return String(value || '').replace(/[&<>"']/g, function(character) {
+                      return {
+                          '&': '&amp;',
+                          '<': '&lt;',
+                          '>': '&gt;',
+                          '"': '&quot;',
+                          "'": '&#39;'
+                      }[character];
+                  });
+                }
+
+                function normalizePublicUrl(value) {
+                  var url = String(value || '').trim();
+
+                  if (!url)
+                      return '';
+
+                  if (url.indexOf('//') === 0)
+                      url = 'https:' + url;
+                  else if (!/^https?:\/\//i.test(url))
+                      url = 'https://' + url;
+
+                  return url.replace(/\/+$/, '');
+                }
+
+                function normalizeApiEndpoint(value) {
+                  return String(value || '').trim().replace(/\/+$/, '');
+                }
+
+                function cloudinaryLogoUrl(storeUuid, storeLogo, transform) {
+                  return 'https://res.cloudinary.com/plugn/image/upload/' + transform
+                      + '/restaurants/' + encodeURIComponent(storeUuid || '')
+                      + '/logo/' + encodeURIComponent(storeLogo || '');
+                }
 
                 function overwriteIndexHtml(store) {
 
@@ -32,7 +69,7 @@
                   var storeUuid = store.restaurant_uuid;
                   var storeTagline = store.tagline;
                   var storeLogo = store.logo;
-                  var storeDomain = store.restaurant_domain;
+                  var storeDomain = normalizePublicUrl(store.restaurant_domain);
                   var storeThemeColor = store.theme_color;
 
                   var storeContent = store.name;
@@ -40,6 +77,15 @@
                   if (store.tagline)
                     storeContent = storeContent + ' | ' + store.tagline;
 
+                  var safeStoreName = escapeHtml(storeName);
+                  var safeStoreContent = escapeHtml(storeContent);
+                  var safeStoreDescription = escapeHtml(storeTagline || storeName);
+                  var safeStoreDomain = escapeHtml(storeDomain);
+                  var safeThemeColor = /^#[0-9a-f]{3,8}$/i.test(storeThemeColor || '') ? storeThemeColor : '#ffffff';
+                  var iconUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_100,h_100');
+                  var appleIconUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_300,h_300,b_rgb:ffffff');
+                  var startupImageUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_200,h_200,b_rgb:ffffff');
+                  var socialImageUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_1200,h_630,c_pad,b_rgb:ffffff');
 
                   var buildFileJs = `
                               #!/usr/bin/env bash
@@ -100,38 +146,41 @@
 
       <head>
         <meta charset='utf-8' />
-        <title>` + storeName + `</title>
+        <title>` + safeStoreContent + `</title>
         <base href='/' />
-        <meta name='description' content='` + storeContent + ` '>
+        <meta name='description' content='` + safeStoreDescription + `'>
         <meta name='viewport'
           content='viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no' />
         <meta name='format-detection' content='telephone=no' />
         <meta name='msapplication-tap-highlight' content='no' />
+        <link rel='canonical' href='` + safeStoreDomain + `' />
         <link rel='icon' type='image/png'
-          href='https://res.cloudinary.com/plugn/image/upload/w_100,h_100/restaurants/` + storeUuid + `/logo/` + storeLogo + `' />
+          href='` + escapeHtml(iconUrl) + `' />
         <link rel='apple-touch-icon'
-          href='https://res.cloudinary.com/plugn/image/upload/w_300,h_300,b_rgb:ffffff/restaurants/` + storeUuid + `/logo/` + storeLogo + `' />
+          href='` + escapeHtml(appleIconUrl) + `' />
         <link rel='apple-touch-startup-image'
-          href='https://res.cloudinary.com/plugn/image/upload/w_200,h_200,b_rgb:ffffff/restaurants/` + storeUuid + `/logo/` + storeLogo + `' />
+          href='` + escapeHtml(startupImageUrl) + `' />
         <!-- add to homescreen for ios -->
         <meta name='mobile-web-app-capable' content='yes' />
         <meta name='apple-touch-fullscreen' content='yes' />
-        <meta name='apple-mobile-web-app-title' content='Expo' />
+        <meta name='apple-mobile-web-app-title' content='` + safeStoreName + `' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <!-- Meta tags for social media -->
         <meta property='og:type' content='website' />
-        <meta property='og:url' content='` + storeDomain + `' />
-        <meta property='og:site_name' content='` + storeContent + `' />
+        <meta property='og:url' content='` + safeStoreDomain + `' />
+        <meta property='og:title' content='` + safeStoreContent + `' />
+        <meta property='og:description' content='` + safeStoreDescription + `' />
+        <meta property='og:site_name' content='` + safeStoreName + `' />
         <meta property='og:image' itemprop='image primaryImageOfPage'
-          content='https://res.cloudinary.com/plugn/image/upload/w_300,h_300/restaurants/` + storeUuid + `/logo/` + storeLogo + `' />
-        <meta name='twitter:card' content='summary' />
-        <meta name='twitter:domain' content='` + storeDomain + ` ' />
-        <meta name='twitter:title' property='og:title' itemprop='name' content='` + storeContent + ` ' />
-        <meta name='twitter:description' property='og:description' itemprop='description | description'
-          content='` + storeName + `' />
+          content='` + escapeHtml(socialImageUrl) + `' />
+        <meta name='twitter:card' content='summary_large_image' />
+        <meta name='twitter:domain' content='` + safeStoreDomain + `' />
+        <meta name='twitter:title' itemprop='name' content='` + safeStoreContent + `' />
+        <meta name='twitter:description' itemprop='description' content='` + safeStoreDescription + `' />
+        <meta name='twitter:image' content='` + escapeHtml(socialImageUrl) + `' />
         <link rel='manifest' href='manifest.webmanifest'>
-        <meta name='theme-color' content='` + storeThemeColor + `'>
+        <meta name='theme-color' content='` + safeThemeColor + `'>
         ` + facebookPixilCode + `
 
         <script src='https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.4/bluebird.min.js'></script>
@@ -190,6 +239,19 @@
                   }
                 }
 
+                function overwriteRobotsTxt(storeUuid, storeDomain, apiEndPoint) {
+                  var publicUrl = normalizePublicUrl(storeDomain);
+                  var sitemapUrl = normalizeApiEndpoint(apiEndPoint) + '/sitemap/' + encodeURIComponent(storeUuid || '');
+                  var robotsFile = 'User-agent: *\nAllow: /\n';
+
+                  if (publicUrl)
+                      robotsFile += 'Host: ' + publicUrl.replace(/^https?:\/\//i, '') + '\n';
+
+                  robotsFile += 'Sitemap: ' + sitemapUrl + '\n';
+
+                  fs.writeFileSync('src/robots.txt', robotsFile);
+                }
+
                 function overwriteManifest(storeUuid, storeName, storeThemeColor, storeLogo) {
 
 
@@ -198,74 +260,33 @@
                           request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
                       });
                   };
-                  download('https://res.cloudinary.com/plugn/image/upload/w_72,h_72/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-72x72.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_96,h_96/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-96x96.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_128,h_128/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-128x128.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_144,h_144/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-144x144.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_152,h_152/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-152x152.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_192,h_192/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-192x192.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_384,h_384/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-384x384.png', function() {});
-                  download('https://res.cloudinary.com/plugn/image/upload/w_512,h_512/restaurants/' + storeUuid + '/logo/' + storeLogo, 'src/assets/icons/icon-512x512.png', function() {});
-                  var manifestFile = `
-{
-  "name": "` + storeName + `",
-  "short_name": "` + storeName + `",
-  "theme_color": "` + storeThemeColor + `",
-  "background_color": "#fafafa",
-  "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
-  "icons": [
-      {
-          "src": "assets/icons/icon-72x72.png",
-          "sizes": "72x72",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-96x96.png",
-          "sizes": "96x96",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-128x128.png",
-          "sizes": "128x128",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-144x144.png",
-          "sizes": "144x144",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-152x152.png",
-          "sizes": "152x152",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-384x384.png",
-          "sizes": "384x384",
-          "type": "image/png",
-          "purpose": "maskable any"
-      },
-      {
-          "src": "assets/icons/icon-512x512.png",
-          "sizes": "512x512",
-          "type": "image/png",
-          "purpose": "maskable any"
-      }
-  ]
-}`;
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_72,h_72'), 'src/assets/icons/icon-72x72.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_96,h_96'), 'src/assets/icons/icon-96x96.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_128,h_128'), 'src/assets/icons/icon-128x128.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_144,h_144'), 'src/assets/icons/icon-144x144.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_152,h_152'), 'src/assets/icons/icon-152x152.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_192,h_192'), 'src/assets/icons/icon-192x192.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_384,h_384'), 'src/assets/icons/icon-384x384.png', function() {});
+                  download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_512,h_512'), 'src/assets/icons/icon-512x512.png', function() {});
+                  var manifestFile = JSON.stringify({
+                      "name": storeName || '',
+                      "short_name": storeName || '',
+                      "theme_color": /^#[0-9a-f]{3,8}$/i.test(storeThemeColor || '') ? storeThemeColor : '#ffffff',
+                      "background_color": "#fafafa",
+                      "display": "standalone",
+                      "scope": "./",
+                      "start_url": "./",
+                      "icons": [
+                          {"src": "assets/icons/icon-72x72.png", "sizes": "72x72", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-152x152.png", "sizes": "152x152", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png", "purpose": "maskable any"},
+                          {"src": "assets/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any"}
+                      ]
+                  }, null, 2);
                   fs.writeFileSync('src/manifest.webmanifest', manifestFile);
                 }
 
@@ -318,6 +339,7 @@ export const environment = {
                                 "output": "./svg"
                             },
                             "src/manifest.webmanifest",
+                            "src/robots.txt",
                             "src/_redirects"
                         ],
                         "styles": [
@@ -480,4 +502,3 @@ export const environment = {
 }`;
                   fs.writeFileSync('angular.json', angularFile);
                 }
-        
