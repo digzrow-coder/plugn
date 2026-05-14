@@ -15,6 +15,9 @@ def main() -> None:
 
     require(source, "function escapeHtml(value)", "HTML escaping helper")
     require(source, "function normalizePublicUrl(value)", "public URL normalizer")
+    require(source, "process.env.PLUGN_STORE_API_ENDPOINT", "runtime API endpoint override")
+    require(source, "process.env.PLUGN_STORE_BRANCH", "runtime store branch override")
+    require(source, "throw new Error('Unable to load store data", "store data fetch failure")
     require(source, "function overwriteRobotsTxt", "robots.txt generator")
     require(source, "overwriteRobotsTxt(response.restaurant_uuid", "robots generation call")
     require(source, "<link rel='canonical' href='` + safeStoreDomain + `'", "canonical link")
@@ -29,6 +32,8 @@ def main() -> None:
         "<title>` + storeName + `</title>",
         "content='` + storeContent + ` '",
         "content='` + storeDomain + ` '",
+        "var apiEndPoint = 'http://localhost",
+        "var storebranchName = 'main';",
     ]
     for pattern in unsafe_patterns:
         if pattern in source:

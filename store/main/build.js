@@ -3,14 +3,21 @@
                 var fs = require('fs');
                 const request = require('request');
 
-                var apiEndPoint = 'http://localhost/~Saoud/plugn/plugn-yii2/api/web/v2';
+                var apiEndPoint = normalizeApiEndpoint(
+                    process.env.PLUGN_STORE_API_ENDPOINT || 'http://localhost/~Saoud/plugn/plugn-yii2/api/web/v2'
+                );
 
-                var storebranchName = 'main';
+                var storebranchName = process.env.PLUGN_STORE_BRANCH || 'main';
 
 
                 var url = apiEndPoint + '/store/get-restaurant-data/' + storebranchName;
 
                 request(url, function(err, res, body) {
+                  if (err)
+                      throw err;
+
+                  if (!res || res.statusCode >= 400)
+                      throw new Error('Unable to load store data from ' + url + ': HTTP ' + (res && res.statusCode));
 
                   var response = JSON.parse(body);
 
