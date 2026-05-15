@@ -7,7 +7,7 @@
                     process.env.PLUGN_STORE_API_ENDPOINT || 'http://localhost/~Saoud/plugn/plugn-yii2/api/web/v2'
                 );
 
-                var storebranchName = process.env.PLUGN_STORE_BRANCH || 'main';
+                var storebranchName = validateStoreBranchName(process.env.PLUGN_STORE_BRANCH || 'main');
 
 
                 var url = apiEndPoint + '/store/get-restaurant-data/' + storebranchName;
@@ -60,6 +60,19 @@
                   return String(value || '').trim().replace(/\/+$/, '');
                 }
 
+                function validateStoreBranchName(value) {
+                  var branchName = String(value || '').trim();
+
+                  if (!/^[A-Za-z0-9._-]+$/.test(branchName))
+                      throw new Error('Invalid store branch name: ' + branchName);
+
+                  return branchName;
+                }
+
+                function themeColorOrDefault(value) {
+                  return /^#[0-9a-f]{3,8}$/i.test(value || '') ? value : '#ffffff';
+                }
+
                 function cloudinaryLogoUrl(storeUuid, storeLogo, transform) {
                   return 'https://res.cloudinary.com/plugn/image/upload/' + transform
                       + '/restaurants/' + encodeURIComponent(storeUuid || '')
@@ -88,7 +101,7 @@
                   var safeStoreContent = escapeHtml(storeContent);
                   var safeStoreDescription = escapeHtml(storeTagline || storeName);
                   var safeStoreDomain = escapeHtml(storeDomain);
-                  var safeThemeColor = /^#[0-9a-f]{3,8}$/i.test(storeThemeColor || '') ? storeThemeColor : '#ffffff';
+                  var safeThemeColor = themeColorOrDefault(storeThemeColor);
                   var iconUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_100,h_100');
                   var appleIconUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_300,h_300,b_rgb:ffffff');
                   var startupImageUrl = cloudinaryLogoUrl(storeUuid, storeLogo, 'w_200,h_200,b_rgb:ffffff');
@@ -105,6 +118,8 @@
 
                   var facebookPixilCode = '';
                   if (facebookPixilId) {
+                      var facebookPixilIdLiteral = JSON.stringify(String(facebookPixilId));
+                      var facebookPixilUrl = 'https://www.facebook.com/tr?id=' + encodeURIComponent(String(facebookPixilId)) + '&ev=PageView&noscript=1';
                       facebookPixilCode = `
 
                               <!-- Facebook Pixel Code -->
@@ -117,14 +132,14 @@
                                  t.src=v;s=b.getElementsByTagName(e)[0];
                                  s.parentNode.insertBefore(t,s)}(window, document,'script',
                                  'https://connect.facebook.net/en_US/fbevents.js');
-                                 fbq('init', '` + facebookPixilId + `');
+                                 fbq('init', ` + facebookPixilIdLiteral + `);
                                  fbq('track', 'PageView');
                               </script>
 
 
                               <noscript>
                                       <img height='1' width='1' style='display:none'
-                                 src='https://www.facebook.com/tr?id= .  facebookPixilId . &ev=PageView&noscript=1'
+                                 src='` + escapeHtml(facebookPixilUrl) + `'
                                  />
                               </noscript>
                               <!-- End Facebook Pixel Code -->
@@ -207,39 +222,47 @@
 
 
                 function overwriteCapacitorConfig(storeAppId, storeName) {
-                  var capacitorConfig = `
-                              {
-                                  "appId":  "` + storeAppId + `",
-                                  "appName":  "` + storeName + `",
-                                  "bundledWebRuntime": false,
-                                  "npmClient":  "npm",
-                                  "webDir":  "www",
-                                  "plugins":  {
-                                  "SplashScreen": {
-                                  "launchShowDuration": 0
-                              }
-                              },
-                              "cordova": {
-                                  "preferences": {
-                                  "ScrollEnabled":  "false",
-                                  "android-minSdkVersion":  "19",
-                                  "BackupWebStorage":  "none",
-                                  "SplashMaintainAspectRatio":  "true",
-                                  "FadeSplashScreenDuration":  "300",
-                                  "SplashShowOnlyFirstTime":  "false",
-                                  "SplashScreen":  "screen",
-                                  "SplashScreenDelay":  "3000"
-                                  }
-                               }
-                              }
-                              `;
+                  var capacitorConfig = JSON.stringify({
+                      "appId": storeAppId || '',
+                      "appName": storeName || '',
+                      "bundledWebRuntime": false,
+                      "npmClient": "npm",
+                      "webDir": "www",
+                      "plugins": {
+                          "SplashScreen": {
+                              "launchShowDuration": 0
+                          }
+                      },
+                      "cordova": {
+                          "preferences": {
+                              "ScrollEnabled": "false",
+                              "android-minSdkVersion": "19",
+                              "BackupWebStorage": "none",
+                              "SplashMaintainAspectRatio": "true",
+                              "FadeSplashScreenDuration": "300",
+                              "SplashShowOnlyFirstTime": "false",
+                              "SplashScreen": "screen",
+                              "SplashScreenDelay": "3000"
+                          }
+                      }
+                  }, null, 2);
                   fs.writeFileSync('capacitor.config.json', capacitorConfig);
+                }
+
+                function sanitizeCustomCss(value) {
+                  var css = String(value || '');
+                  var unsafePattern = /@import|url\s*\(|expression\s*\(|javascript\s*:|data\s*:|-moz-binding|behavior\s*:/i;
+
+                  if (unsafePattern.test(css))
+                      throw new Error('Unsafe custom CSS rejected');
+
+                  return css;
                 }
 
                 function overwriteGlobalScss(storeCustomCss) {
 
                   if (storeCustomCss)
-                      fs.appendFileSync('src/global.scss', storeCustomCss);
+                      fs.appendFileSync('src/global.scss', sanitizeCustomCss(storeCustomCss));
                   var dir = 'src/assets/icons';
                   if (!fs.existsSync(dir)) {
                       fs.mkdirSync(dir);
@@ -263,8 +286,31 @@
 
 
                   var download = function(uri, filename, callback) {
-                      request.head(uri, function(err, res, body) {
-                          request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
+                      var complete = false;
+                      var done = function(err) {
+                          if (complete)
+                              return;
+
+                          complete = true;
+
+                          if (err)
+                              console.error('Unable to download ' + uri + ': ' + err.message);
+
+                          callback(err);
+                      };
+
+                      request.head(uri, function(err, res) {
+                          if (err)
+                              return done(err);
+
+                          if (!res || res.statusCode >= 400)
+                              return done(new Error('HTTP ' + (res && res.statusCode)));
+
+                          request(uri)
+                              .on('error', done)
+                              .pipe(fs.createWriteStream(filename)
+                                  .on('error', done)
+                                  .on('close', function() { done(); }));
                       });
                   };
                   download(cloudinaryLogoUrl(storeUuid, storeLogo, 'w_72,h_72'), 'src/assets/icons/icon-72x72.png', function() {});
@@ -278,7 +324,7 @@
                   var manifestFile = JSON.stringify({
                       "name": storeName || '',
                       "short_name": storeName || '',
-                      "theme_color": /^#[0-9a-f]{3,8}$/i.test(storeThemeColor || '') ? storeThemeColor : '#ffffff',
+                      "theme_color": themeColorOrDefault(storeThemeColor),
                       "background_color": "#fafafa",
                       "display": "standalone",
                       "scope": "./",
@@ -304,8 +350,8 @@
 export const environment = {
   production: true,
   envName: 'prod',
-  apiEndpoint : '` + apiEndPoint + `',
-  restaurantUuid : '` + storeUuid + `'
+  apiEndpoint : ` + JSON.stringify(apiEndPoint) + `,
+  restaurantUuid : ` + JSON.stringify(storeUuid || '') + `
 };`;
                   fs.writeFileSync('src/environments/environment.' + storebranchName + '.ts', environmentFile);
 
