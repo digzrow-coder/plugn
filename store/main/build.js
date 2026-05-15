@@ -148,7 +148,9 @@
 
                   var facebookPixilCode = '';
                   if (facebookPixilId) {
-                      var facebookPixilIdLiteral = JSON.stringify(String(facebookPixilId));
+                      var facebookPixilIdLiteral = JSON.stringify(String(facebookPixilId))
+                          .replace(/</g, '\\u003c')
+                          .replace(/-->/g, '--\\u003e');
                       var facebookPixilUrl = 'https://www.facebook.com/tr?id=' + encodeURIComponent(String(facebookPixilId)) + '&ev=PageView&noscript=1';
                       facebookPixilCode = `
 

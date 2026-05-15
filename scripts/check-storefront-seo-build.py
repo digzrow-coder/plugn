@@ -40,6 +40,8 @@ def main() -> None:
     require(source, "function facebookPixelIdOrDefault(value)", "Facebook pixel ID validator")
     require(source, "/^[0-9]+$/.test(pixelId)", "Facebook pixel numeric allowlist")
     require(source, "var facebookPixilIdLiteral = JSON.stringify(String(facebookPixilId))", "Facebook pixel JS string escaping")
+    require(source, ".replace(/</g, '\\\\u003c')", "Facebook pixel script-tag escape")
+    require(source, ".replace(/-->/g, '--\\\\u003e')", "Facebook pixel HTML comment escape")
     require(source, "encodeURIComponent(String(facebookPixilId))", "Facebook pixel noscript URL escaping")
     require(source, "function sanitizeCustomCss(value)", "custom CSS sanitizer")
     require(source, "Unsafe custom CSS rejected", "custom CSS rejection")
