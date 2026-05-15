@@ -13,11 +13,13 @@ SOURCE = ROOT / "common" / "components" / "FileGeneratorComponent.php"
 
 
 def fail(message: str) -> None:
+    """Print a validation failure and terminate with a non-zero exit code."""
     print(f"FAIL: {message}", file=sys.stderr)
     raise SystemExit(1)
 
 
 def main() -> None:
+    """Validate FileGeneratorComponent's embedded storefront build.js template."""
     source = SOURCE.read_text(encoding="utf-8")
     match = re.search(
         r"\$buildJsContent\s*=\s*<<<'JS'\n(?P<js>.*?)\nJS;",
