@@ -22,7 +22,7 @@ def main() -> None:
     """Validate FileGeneratorComponent's embedded storefront build.js template."""
     source = SOURCE.read_text(encoding="utf-8")
     match = re.search(
-        r"\$buildJsContent\s*=\s*<<<'JS'\n(?P<js>.*?)\nJS;",
+        r"\$buildJsContent\s*=\s*<<<'JS'\r?\n(?P<js>.*?)\r?\nJS;",
         source,
         re.DOTALL,
     )
@@ -73,12 +73,15 @@ def main() -> None:
         generated_path = Path(handle.name)
 
     try:
-        result = subprocess.run(
-            ["node", "--check", str(generated_path)],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["node", "--check", str(generated_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            fail(f"node executable not found while running: node --check {generated_path}")
     finally:
         generated_path.unlink(missing_ok=True)
 
