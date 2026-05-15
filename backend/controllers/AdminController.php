@@ -88,8 +88,14 @@ class AdminController extends Controller {
 
                 return $this->redirect(['view', 'id' => $model->admin_id]);
             } else {
-                print_r($model->getErrors());
-                exit;
+                Yii::warning([
+                    'message' => 'Admin creation failed validation',
+                    'errors' => $model->getErrors(),
+                ], __METHOD__);
+                Yii::$app->session->setFlash(
+                    'error',
+                    Yii::t('app', 'Unable to create admin. Please review the highlighted fields.')
+                );
             }
         }
 
