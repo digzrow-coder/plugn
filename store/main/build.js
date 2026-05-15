@@ -30,6 +30,9 @@
                   overwriteAngularFile(storebranchName);
                 });
 
+                /**
+                 * Escape text before interpolating store-provided values into HTML attributes or tags.
+                 */
                 function escapeHtml(value) {
                   return String(value || '').replace(/[&<>"']/g, function(character) {
                       return {
@@ -42,6 +45,9 @@
                   });
                 }
 
+                /**
+                 * Normalize a storefront public URL so canonical, OpenGraph, and robots output are stable.
+                 */
                 function normalizePublicUrl(value) {
                   var url = String(value || '').trim();
 
@@ -56,10 +62,16 @@
                   return url.replace(/\/+$/, '');
                 }
 
+                /**
+                 * Trim trailing slashes from the API endpoint used for fetches and sitemap URLs.
+                 */
                 function normalizeApiEndpoint(value) {
                   return String(value || '').trim().replace(/\/+$/, '');
                 }
 
+                /**
+                 * Restrict branch names before they are embedded into generated build commands and paths.
+                 */
                 function validateStoreBranchName(value) {
                   var branchName = String(value || '').trim();
 
@@ -69,16 +81,25 @@
                   return branchName;
                 }
 
+                /**
+                 * Return a valid manifest/meta theme color, falling back to white for unsafe values.
+                 */
                 function themeColorOrDefault(value) {
                   return /^#[0-9a-f]{3,8}$/i.test(value || '') ? value : '#ffffff';
                 }
 
+                /**
+                 * Build a Cloudinary logo URL while encoding store-controlled path segments.
+                 */
                 function cloudinaryLogoUrl(storeUuid, storeLogo, transform) {
                   return 'https://res.cloudinary.com/plugn/image/upload/' + transform
                       + '/restaurants/' + encodeURIComponent(storeUuid || '')
                       + '/logo/' + encodeURIComponent(storeLogo || '');
                 }
 
+                /**
+                 * Regenerate index.html with sanitized SEO, social, icon, and analytics metadata.
+                 */
                 function overwriteIndexHtml(store) {
 
                   console.log(store);
@@ -221,6 +242,9 @@
                 }
 
 
+                /**
+                 * Write capacitor.config.json through JSON serialization so app metadata stays valid.
+                 */
                 function overwriteCapacitorConfig(storeAppId, storeName) {
                   var capacitorConfig = JSON.stringify({
                       "appId": storeAppId || '',
@@ -249,6 +273,9 @@
                   fs.writeFileSync('capacitor.config.json', capacitorConfig);
                 }
 
+                /**
+                 * Reject custom CSS constructs that can load remote resources or execute legacy expressions.
+                 */
                 function sanitizeCustomCss(value) {
                   var css = String(value || '');
                   var unsafePattern = /@import|url\s*\(|expression\s*\(|javascript\s*:|data\s*:|-moz-binding|behavior\s*:/i;
@@ -259,6 +286,9 @@
                   return css;
                 }
 
+                /**
+                 * Append sanitized custom CSS and ensure the icon asset directory exists.
+                 */
                 function overwriteGlobalScss(storeCustomCss) {
 
                   if (storeCustomCss)
@@ -269,6 +299,9 @@
                   }
                 }
 
+                /**
+                 * Generate robots.txt with a normalized host and sitemap endpoint for the storefront.
+                 */
                 function overwriteRobotsTxt(storeUuid, storeDomain, apiEndPoint) {
                   var publicUrl = normalizePublicUrl(storeDomain);
                   var sitemapUrl = normalizeApiEndpoint(apiEndPoint) + '/sitemap/' + encodeURIComponent(storeUuid || '');
@@ -282,6 +315,9 @@
                   fs.writeFileSync('src/robots.txt', robotsFile);
                 }
 
+                /**
+                 * Generate PWA icons and write manifest.webmanifest as structured JSON.
+                 */
                 function overwriteManifest(storeUuid, storeName, storeThemeColor, storeLogo) {
 
 
@@ -344,6 +380,9 @@
                 }
 
 
+                /**
+                 * Write the Angular production environment file with escaped endpoint and store UUID values.
+                 */
                 function overwriteEnvironment(storeUuid, storebranchName, apiEndPoint) {
 
                   var environmentFile = `
@@ -357,6 +396,9 @@ export const environment = {
 
                 }
 
+                /**
+                 * Rewrite angular.json so the selected branch config includes the generated robots asset.
+                 */
                 function overwriteAngularFile(storebranchName) {
 
                   var angularFile = `{
