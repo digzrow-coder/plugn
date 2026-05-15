@@ -3,7 +3,9 @@
 
 from pathlib import Path
 import re
+import subprocess
 import sys
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +65,23 @@ def main() -> None:
     for pattern in forbidden_patterns:
         if re.search(pattern, generated):
             fail(f"forbidden generated pattern still present: {pattern}")
+
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".js", delete=False) as handle:
+        handle.write(generated)
+        generated_path = Path(handle.name)
+
+    try:
+        result = subprocess.run(
+            ["node", "--check", str(generated_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        generated_path.unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        fail("generated build.js failed node --check:\n" + result.stderr.strip())
 
     print("FileGeneratorComponent generated build.js checks passed")
 
