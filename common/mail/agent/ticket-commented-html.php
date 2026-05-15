@@ -13,6 +13,6 @@ use yii\helpers\Html;
         <p>New comment from <?= Html::encode($model->staff->staff_name) ?>,</p>
     <?php } ?>
 
-    <p><?= $model->ticket_comment_detail ?></p>
+    <p><?= nl2br(Html::encode($model->ticket_comment_detail)) ?></p>
 </div>
 

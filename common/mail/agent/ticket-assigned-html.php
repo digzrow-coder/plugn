@@ -7,11 +7,11 @@ use yii\helpers\Html;
 ?>
 <div class="ticket-assigned">
 
-    Ticket assigned for <?= $model->restaurant->name ?>
+    Ticket assigned for <?= Html::encode($model->restaurant->name) ?>
 
     <br />
 
-    <?= $model->ticket_detail ?>
+    <?= nl2br(Html::encode($model->ticket_detail)) ?>
 
 </div>
 
