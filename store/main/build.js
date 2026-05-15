@@ -85,7 +85,18 @@
                  * Return a valid manifest/meta theme color, falling back to white for unsafe values.
                  */
                 function themeColorOrDefault(value) {
-                  return /^#[0-9a-f]{3,8}$/i.test(value || '') ? value : '#ffffff';
+                  return /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value || '')
+                      ? value
+                      : '#ffffff';
+                }
+
+                /**
+                 * Facebook Pixel IDs are numeric; reject anything that could break inline script output.
+                 */
+                function facebookPixelIdOrDefault(value) {
+                  var pixelId = String(value || '').trim();
+
+                  return /^[0-9]+$/.test(pixelId) ? pixelId : '';
                 }
 
                 /**
@@ -102,9 +113,7 @@
                  */
                 function overwriteIndexHtml(store) {
 
-                  console.log(store);
-
-                  var facebookPixilId = store.facebook_pixil_id;
+                  var facebookPixilId = facebookPixelIdOrDefault(store.facebook_pixil_id);
                   var googleAnalyticsId = store.google_analytics_id;
                   var storeName = store.name;
                   var storeUuid = store.restaurant_uuid;

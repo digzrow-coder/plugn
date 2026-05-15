@@ -21,6 +21,12 @@ def main() -> None:
     require(source, "process.env.PLUGN_STORE_BRANCH", "runtime store branch override")
     require(source, "function validateStoreBranchName(value)", "store branch validator")
     require(source, "/^[A-Za-z0-9._-]+$/.test(branchName)", "store branch allowlist")
+    require(source, "function themeColorOrDefault(value)", "theme color validator")
+    require(
+        source,
+        "/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i",
+        "strict CSS hex theme color allowlist",
+    )
     require(source, "throw new Error('Unable to load store data", "store data fetch failure")
     require(source, "function overwriteRobotsTxt", "robots.txt generator")
     require(source, "overwriteRobotsTxt(response.restaurant_uuid", "robots generation call")
@@ -31,6 +37,8 @@ def main() -> None:
     require(source, "Sitemap: ' + sitemapUrl", "robots sitemap directive")
     require(source, '"src/robots.txt"', "Angular asset entry for robots.txt")
     require(source, "JSON.stringify({", "manifest JSON escaping")
+    require(source, "function facebookPixelIdOrDefault(value)", "Facebook pixel ID validator")
+    require(source, "/^[0-9]+$/.test(pixelId)", "Facebook pixel numeric allowlist")
     require(source, "var facebookPixilIdLiteral = JSON.stringify(String(facebookPixilId))", "Facebook pixel JS string escaping")
     require(source, "encodeURIComponent(String(facebookPixilId))", "Facebook pixel noscript URL escaping")
     require(source, "function sanitizeCustomCss(value)", "custom CSS sanitizer")
@@ -46,6 +54,7 @@ def main() -> None:
         "content='` + storeDomain + ` '",
         "var apiEndPoint = 'http://localhost",
         "var storebranchName = 'main';",
+        "console.log(store);",
         "fbq('init', '` + facebookPixilId + `');",
         "src='https://www.facebook.com/tr?id= .  facebookPixilId . &ev=PageView&noscript=1'",
         "fs.appendFileSync('src/global.scss', storeCustomCss)",
