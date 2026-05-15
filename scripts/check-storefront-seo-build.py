@@ -6,11 +6,13 @@ BUILD_JS = ROOT / "store" / "main" / "build.js"
 
 
 def require(source: str, needle: str, description: str) -> None:
+    """Require a static build-script fragment that protects storefront output."""
     if needle not in source:
         raise SystemExit(f"Missing {description}: {needle}")
 
 
 def main() -> None:
+    """Validate generated storefront SEO, robots, and escaping safeguards."""
     source = BUILD_JS.read_text(encoding="utf-8")
 
     require(source, "function escapeHtml(value)", "HTML escaping helper")
